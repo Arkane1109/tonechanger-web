@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ToneChanger: sube una canción, cambia su tono musical y descarga el resultado.">
+  <meta name="theme-color" content="#0b0a1a">
+  <title>ToneChanger · Cambia el tono de tu audio</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%238b5cf6'/%3E%3Cstop offset='1' stop-color='%233b82f6'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M7 16h2M11 11v10M15 7v18M19 12v8M23 9v14M25 16h0' stroke='white' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <header class="header">
+    <div class="brand">
+      <span class="brand__logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="40" height="40">
+          <defs>
+            <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#8b5cf6"/>
+              <stop offset="1" stop-color="#3b82f6"/>
+            </linearGradient>
+          </defs>
+          <rect width="32" height="32" rx="9" fill="url(#logoGrad)"/>
+          <path d="M7 16h1.5M11 11v10M15 7v18M19 12v8M23 9v14" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <h1 class="brand__title">ToneChanger</h1>
+    </div>
+    <p class="header__subtitle">
+      Sube una canción o grabación, sube o baja su tono musical hasta una octava
+      <strong>sin cambiar su duración</strong>, escucha el resultado y descárgalo.
+    </p>
+    <p class="header__meta">Sin registro · MP3 y WAV · Hasta 50 MB · Tu audio no sale de tu equipo</p>
+  </header>
+
+  <main class="layout">
+    <!-- ================= COLUMNA 1: CARGA + ORIGINAL ================= -->
+    <section class="card" aria-labelledby="step1-title">
+      <div class="card__head">
+        <span class="step">1</span>
+        <h2 id="step1-title">Carga tu audio</h2>
+      </div>
+
+      <!-- Zona de carga (se oculta cuando ya hay un archivo cargado) -->
+      <div id="dropzone" class="dropzone">
+        <svg class="dropzone__icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"
+                fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <p class="dropzone__text">Arrastra tu archivo aquí</p>
+        <p class="dropzone__or">o</p>
+        <button type="button" id="selectBtn" class="btn btn--primary">Seleccionar archivo</button>
+        <p class="dropzone__hint">Formatos: MP3 y WAV · Máximo 50 MB y 10 minutos</p>
+        <input type="file" id="fileInput" accept=".mp3,.wav,audio/mpeg,audio/wav,audio/x-wav,audio/wave" hidden>
+      </div>
+
+      <!-- Estado de carga -->
+      <div id="uploadStatus" class="inline-status" hidden>
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Leyendo el archivo…</span>
+      </div>
+
+      <!-- Información del archivo cargado -->
+      <div id="fileInfo" class="file-info" hidden>
+        <div class="file-info__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm12-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="file-info__text">
+          <p class="file-info__name" id="fileName">—</p>
+          <p class="file-info__details" id="fileDetails">—</p>
+        </div>
+        <button type="button" id="newFileBtn" class="btn btn--ghost btn--sm">Cargar otro archivo</button>
+      </div>
+
+      <!-- Reproductor del audio original -->
+      <div class="sub-block" id="originalBlock">
+        <h3 class="sub-title">Audio original</h3>
+        <div class="player" id="originalPlayer" data-disabled="true">
+          <audio preload="metadata"></audio>
+          <button type="button" class="player__btn player__play" aria-label="Reproducir" title="Reproducir / Pausar">
+            <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+            <svg class="icon-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
+          </button>
+          <button type="button" class="player__btn player__stop" aria-label="Detener" title="Detener">
+            <svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>
+          </button>
+          <div class="player__timeline">
+            <input type="range" class="player__seek" min="0" max="1000" value="0" step="1" aria-label="Posición del audio original">
+          </div>
+          <span class="player__time">0:00 / 0:00</span>
+        </div>
+        <p class="empty-hint" id="originalHint">Carga un archivo para escuchar el audio original.</p>
+      </div>
+    </section>
+
+    <!-- ================= COLUMNA 2: TONO + RESULTADO ================= -->
+    <section class="card" aria-labelledby="step2-title">
+      <div class="card__head">
+        <span class="step">2</span>
+        <h2 id="step2-title">Ajusta el tono</h2>
+      </div>
+
+      <fieldset id="toneControls" class="tone" disabled>
+        <legend class="visually-hidden">Control de tono</legend>
+
+        <div class="tone__display">
+          <output id="semitoneValue" class="tone__value" for="pitchSlider">0</output>
+          <span class="tone__unit">semitonos</span>
+        </div>
+        <p class="tone__desc" id="semitoneDesc">Tono original</p>
+        <p class="tone__math" id="semitoneMath">Factor de frecuencia: 2<sup>0/12</sup> = ×1.0000</p>
+
+        <div class="tone__slider-row">
+          <button type="button" id="downBtn" class="btn btn--icon" aria-label="Disminuir tono un semitono" title="Bajar 1 semitono">−</button>
+          <div class="tone__slider-wrap">
+            <input type="range" id="pitchSlider" class="slider"
+                   min="-12" max="12" step="1" value="0"
+                   aria-label="Semitonos a modificar" aria-describedby="semitoneDesc">
+            <div class="slider__ticks" aria-hidden="true">
+              <span>-12</span><span>-6</span><span>0</span><span>+6</span><span>+12</span>
+            </div>
+          </div>
+          <button type="button" id="upBtn" class="btn btn--icon" aria-label="Aumentar tono un semitono" title="Subir 1 semitono">+</button>
+        </div>
+
+        <div class="presets" role="group" aria-label="Valores rápidos">
+          <button type="button" class="chip" data-value="-12">-12 · octava abajo</button>
+          <button type="button" class="chip" data-value="-6">-6</button>
+          <button type="button" class="chip" data-value="0">0 · original</button>
+          <button type="button" class="chip" data-value="6">+6</button>
+          <button type="button" class="chip" data-value="12">+12 · octava arriba</button>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="applyBtn" class="btn btn--primary btn--lg">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h3l2-6 4 12 2-6h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Aplicar cambio
+          </button>
+          <button type="button" id="resetBtn" class="btn btn--ghost btn--lg">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v6h6M4.5 15a8 8 0 1 0 1.9-8.3L4 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Restablecer
+          </button>
+        </div>
+      </fieldset>
+
+      <div class="divider"></div>
+
+      <div class="card__head card__head--sub">
+        <span class="step">3</span>
+        <h2>Escucha y descarga</h2>
+      </div>
+
+      <!-- Indicador de procesamiento -->
+      <div id="processing" class="processing" hidden>
+        <div class="processing__bars" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <p><strong>Procesando audio…</strong> <span id="progressText">0 %</span> · <span id="processingTime">0 s</span></p>
+        <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+        <p class="processing__hint">Puedes seguir escuchando el original mientras tanto.</p>
+      </div>
+
+      <div id="resultBlock" class="result" data-empty="true">
+        <p class="result__label" id="resultLabel">Aún no hay audio modificado.</p>
+        <div class="player" id="resultPlayer" data-disabled="true">
+          <audio preload="auto"></audio>
+          <button type="button" class="player__btn player__play" aria-label="Reproducir vista previa" title="Reproducir / Pausar">
+            <svg class="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+            <svg class="icon-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
+          </button>
+          <button type="button" class="player__btn player__stop" aria-label="Detener vista previa" title="Detener">
+            <svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>
+          </button>
+          <div class="player__timeline">
+            <input type="range" class="player__seek" min="0" max="1000" value="0" step="1" aria-label="Posición del audio modificado">
+          </div>
+          <span class="player__time">0:00 / 0:00</span>
+        </div>
+        <p class="stale-hint" id="staleHint" hidden>
+          Cambiaste el control de tono. Pulsa <strong>Aplicar cambio</strong> para actualizar la vista previa.
+        </p>
+        <a id="downloadBtn" class="btn btn--download btn--lg" href="#" aria-disabled="true" download>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m0 0-5-5m5 5 5-5M4 20h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Descargar audio modificado (WAV)
+        </a>
+      </div>
+    </section>
+
+    <!-- ================= EXPLICACIÓN MATEMÁTICA ================= -->
+    <section class="card card--wide info" aria-labelledby="info-title">
+      <h2 id="info-title">¿Cómo funciona?</h2>
+      <div class="info__grid">
+        <div>
+          <h3>Semitonos y frecuencia</h3>
+          <p>En la escala temperada una octava se divide en 12 semitonos iguales. Subir
+            <em>n</em> semitonos multiplica todas las frecuencias por:</p>
+          <p class="formula">f′ = f · 2<sup>n/12</sup></p>
+          <p>Así, +12 duplica la frecuencia (una octava arriba) y −12 la reduce a la mitad.</p>
+        </div>
+        <div>
+          <h3>Tono sin cambiar la velocidad</h3>
+          <p>Acelerar un audio también lo hace más agudo, pero más corto. ToneChanger usa el mismo
+            método que <code>librosa.effects.pitch_shift</code>, programado en JavaScript: primero
+            estira el audio en el tiempo con un vocoder de fase (basado en la Transformada de Fourier
+            de Tiempo Corto) y luego lo remuestrea. El resultado tiene otro tono y
+            <strong>la misma duración</strong>.</p>
+        </div>
+        <div>
+          <h3>Tus archivos</h3>
+          <p>No necesitas cuenta. Todo el procesamiento ocurre en tu navegador: tu audio nunca se
+            sube a ningún servidor y desaparece al cerrar la página.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p><strong>ToneChanger</strong> · Proyecto de Matemáticas Aplicadas</p>
+    <p>Arturo Rodríguez y Dylan Cardona</p>
+  </footer>
+
+  <!-- Contenedor de notificaciones (éxito, error, información) -->
+  <div id="toasts" class="toasts" role="status" aria-live="polite"></div>
+
+  <script>
+    // Límites configurados en el servidor (app.py)
+    window.TONECHANGER_CONFIG = {
+      maxSizeMb: 50,
+      maxMinutes: 10,
+      minSemitones: -12,
+      maxSemitones: 12
+    };
+  </script>
+  <script src="js/dsp.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
